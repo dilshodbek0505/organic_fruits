@@ -2,6 +2,10 @@ from django.db import models
 from django.core.validators import (
     RegexValidator, MaxValueValidator, 
     MinValueValidator, MinLengthValidator)
+import qrcode
+from io import BytesIO
+from PIL import Image, ImageDraw
+from django.core.files.base import File
 
 
 phone_regex = RegexValidator(
@@ -48,15 +52,37 @@ class Customer(CustomModel):
     tiktok = models.CharField(max_length=255, blank=True, null=True)
     whatsapp = models.CharField(max_length=255, blank=True, null=True)
     facebook = models.CharField(max_length=255, blank=True, null=True)
+    qr_code = models.ImageField(upload_to='qr_code/')
     
     def __str__(self) -> str:
         return self.full_name
+
+    def save(self, *args, **kwargs):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(f"http://10.50.9.161:3000/{self.username}/")
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        canvas = Image.new('RGB', (370, 370), 'white')
+        draw = ImageDraw.Draw(canvas)
+        canvas.paste(img)
+        fname = f'qr_code-{self.username}.png'
+        buffer = BytesIO()
+        canvas.save(buffer, 'PNG')
+        self.qr_code.save(fname, File(buffer), save=False)
+        canvas.close()
+        super().save(*args, **kwargs)
 
 class Rating(CustomModel):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='customer_rating')
     phone_number = models.CharField(
         max_length=13,
-        validators=[phone_regex]
+        validators=[phone_regex],
+
     )
     number = models.PositiveIntegerField(
         validators=[MaxValueValidator(5), MinValueValidator(1)]

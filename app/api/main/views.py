@@ -220,19 +220,12 @@ class CustomerRatingAPi(APIView):
         customer = get_object_or_none(Customer, username = username)
         rating_number = data.get("rating")
         phone_number = data.get("phone_number")
-        otp_code = data.get("otp_code")
         message = ""
         if rating_number and customer and phone_number:
             rating = get_object_or_none(Rating, phone_number = phone_number)
             if rating:
                 message = "Telfon raqam oldin ro'yxatdan o'tgan"
-            else:
-                top_code = requests.post("http://127.0.0.1:8000/user/otp/code/", data={"otp_code": otp_code})
-                top_code = top_code.json()
-                top_code_status = top_code['status']
-                if not top_code_status:
-                    message = "OTP to'g'ri kelmadi" 
-                else:
+            else: 
                     Rating.objects.create(
                         number = rating_number,
                         customer = customer,
@@ -251,16 +244,17 @@ class CustomerRatingAPi(APIView):
             "error": message
         })
 
-class OTPApi(APIView):
-    def post(self, request,*args, **kwargs):
-        otp_code = randint(10000,99999)
-        print(otp_code)
-        data = request.data
-        user_otp_code = data.get("otp_code")
-        status = bool(user_otp_code and otp_code == user_otp_code)
+
+
+class CustomerQrCodeApi(APIView):
+    def get(self, request, username, *args, **kwargs):
+        customer = get_object_or_none(Customer, username = username)
+        if customer:
+            return Response({
+                "data": {
+                    "qr_code": customer.qr_code.url
+                }
+            })
         return Response({
-            "status": status,
+            "error": "Bunday foydalanuvchi topilmadi!"
         })
-
-
-

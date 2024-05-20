@@ -6,8 +6,8 @@ from .views import (
     LogoutApi,
     CustomerCommendApi,
     CustomerRatingAPi,
-    OTPApi,
-    CustomerCreateUpdateApi
+    CustomerCreateUpdateApi,
+    CustomerQrCodeApi
 )
 
 
@@ -18,10 +18,9 @@ urlpatterns = [
     path('user/logout/', LogoutApi.as_view()),
     path('customer/details/<str:username>/rating/',CustomerRatingAPi.as_view()),
     path('customer/details/<str:username>/commend/',CustomerCommendApi.as_view()),
-    path('user/otp/code/', OTPApi.as_view()),
     path('customer/add/', CustomerCreateUpdateApi.as_view()),
-    path('customer/details/<str:username>/update/', CustomerCreateUpdateApi.as_view())
-
+    path('customer/details/<str:username>/update/', CustomerCreateUpdateApi.as_view()),
+    path('customer/details/<str:username>/qr_code/', CustomerQrCodeApi.as_view())
 ]
 
 
