@@ -49,13 +49,58 @@ class CustomerApi(APIView):
                     "status": False,
                     "error": "Bunday foydalanuvchi toplmadi!"
             }, status=HTTP_404_NOT_FOUND)
+        rating = Rating.objects.select_related(
+            "customer",
+        ).filter(
+            customer_id = customer['id']
+        ).aggregate(rating_total = Avg('number'))
+        if rating['rating_total']:
+            rating = round(rating['rating_total'],1)
+        else:
+            rating = 0
 
         return Response({
             "status": True,
-            "data": {**customer}
+            "data": {**customer,
+                     "rating": rating}
         })
     
+    def patch(self, request, username: str, *args, **kwargs):
+        customer = get_object_or_none(Customer, username = username)
+        if request.user.is_authenticated and request.user.is_staff:    
+            if customer:
+                serializer = CustomerSerializer(instance=customer, data=request.data, partial = True)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+                return Response({
+                    "data": serializer.data
+                })
+            message = "Bunday foydalanuvchi topilmadi!"
+        else:
+            message = "Bu amalyotni bajarish uchun sizda ruxsat mavjud emas!"
+
+        return Response({
+            "error": message
+        })
     
+    def delete(self, request, username: str, *args, **kwargs):
+        customer = get_object_or_none(Customer, username = username)
+        if request.user.is_authenticated and request.user.is_staff:    
+            if customer:
+                customer.delete()
+                return Response({
+                    "status": True,
+                    "message": "Foydalanuvchi o'chirildi!"
+                })
+            message = "Bunday foydalanuvchi topilmadi!"
+        else:
+            message = "Bu amalyotni bajarish uchun sizda ruxsat mavjud emas!"
+
+        return Response({
+            "error": message
+        })
+
+
 class AllCusomterApi(APIView):
     permission_classes = (IsAuthenticated, IsAdminUser, )
     
